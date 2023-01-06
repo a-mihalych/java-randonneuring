@@ -12,7 +12,7 @@ public class UserDbStorage implements UserStorage {
     @Override
     public List<User> getUsers() {
         System.out.println("getUsers");
-        return List.of(new User());
+        return List.of(new User(1, "qw", "er", "as", "df", "zx"));
     }
 
     @Override
@@ -32,9 +32,4 @@ public class UserDbStorage implements UserStorage {
         System.out.println("saveUsers");
         return new User();
     }
-
-//    @Override
-//    public Integer deleteUser(Integer id) {
-//        return null;
-//    }
 }

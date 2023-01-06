@@ -14,5 +14,5 @@ public interface UserStorage {
 
     User saveUser(User user);
 
-    Integer deleteUser(Integer id);
+//    Integer deleteUser(Integer id);
 }

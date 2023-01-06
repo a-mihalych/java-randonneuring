@@ -32,9 +32,4 @@ public class BrevetDBStorage implements BrevetStorage {
         System.out.println("saveBrevets");
         return new Brevet();
     }
-
-//    @Override
-//    public Integer deleteBrevet(Integer id) {
-//        return null;
-//    }
 }
