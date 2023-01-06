@@ -1,5 +1,6 @@
 package ru.mihalych.randonneuring.model;
 
+import jakarta.validation.constraints.NotBlank;
 import lombok.*;
 
 @Setter
@@ -12,6 +13,8 @@ import lombok.*;
 public class Brevet {
 
     private Integer id;
+    @NotBlank
     private String name;
+    @NotBlank
     private Integer distance;
 }
