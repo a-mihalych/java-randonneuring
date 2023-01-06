@@ -1,34 +1,40 @@
 package ru.mihalych.randonneuring.storage;
 
+import org.springframework.stereotype.Repository;
 import ru.mihalych.randonneuring.model.Brevet;
 import ru.mihalych.randonneuring.storage.interfaces.BrevetStorage;
 
 import java.util.List;
 
+@Repository
 public class BrevetDBStorage implements BrevetStorage {
 
     @Override
     public List<Brevet> getBrevets() {
-        return null;
+        System.out.println("getBrevets");
+        return List.of(new Brevet());
     }
 
     @Override
     public Brevet getBrevet(Integer id) {
-        return null;
+        System.out.println("getBrevet");
+        return new Brevet();
     }
 
     @Override
     public Brevet createBrevet(Brevet brevet) {
-        return null;
+        System.out.println("createBrevets");
+        return new Brevet();
     }
 
     @Override
-    public Brevet saveUser(Brevet brevet) {
-        return null;
+    public Brevet saveBrevet(Brevet brevet) {
+        System.out.println("saveBrevets");
+        return new Brevet();
     }
 
-    @Override
-    public Integer deleteBrevet(Integer id) {
-        return null;
-    }
+//    @Override
+//    public Integer deleteBrevet(Integer id) {
+//        return null;
+//    }
 }

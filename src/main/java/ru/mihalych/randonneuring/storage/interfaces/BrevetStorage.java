@@ -12,7 +12,7 @@ public interface BrevetStorage {
 
     Brevet createBrevet(Brevet brevet);
 
-    Brevet saveUser(Brevet brevet);
+    Brevet saveBrevet(Brevet brevet);
 
-    Integer deleteBrevet(Integer id);
+//    Integer deleteBrevet(Integer id);
 }

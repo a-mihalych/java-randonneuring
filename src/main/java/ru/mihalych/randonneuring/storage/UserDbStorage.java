@@ -1,34 +1,40 @@
 package ru.mihalych.randonneuring.storage;
 
+import org.springframework.stereotype.Repository;
 import ru.mihalych.randonneuring.model.User;
 import ru.mihalych.randonneuring.storage.interfaces.UserStorage;
 
 import java.util.List;
 
+@Repository
 public class UserDbStorage implements UserStorage {
 
     @Override
     public List<User> getUsers() {
-        return null;
+        System.out.println("getUsers");
+        return List.of(new User());
     }
 
     @Override
     public User getUser(Integer id) {
-        return null;
+        System.out.println("getUser");
+        return new User();
     }
 
     @Override
     public User createUser(User user) {
-        return null;
+        System.out.println("createUsers");
+        return new User();
     }
 
     @Override
     public User saveUser(User user) {
-        return null;
+        System.out.println("saveUsers");
+        return new User();
     }
 
-    @Override
-    public Integer deleteUser(Integer id) {
-        return null;
-    }
+//    @Override
+//    public Integer deleteUser(Integer id) {
+//        return null;
+//    }
 }
