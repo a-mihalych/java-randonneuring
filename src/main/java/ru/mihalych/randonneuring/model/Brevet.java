@@ -15,6 +15,5 @@ public class Brevet {
     private Integer id;
     @NotBlank
     private String name;
-    @NotBlank
     private Integer distance;
 }

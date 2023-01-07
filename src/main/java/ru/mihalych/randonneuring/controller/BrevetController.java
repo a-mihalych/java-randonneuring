@@ -1,6 +1,6 @@
 package ru.mihalych.randonneuring.controller;
 
-import org.springframework.beans.factory.annotation.Autowired;
+import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.*;
 import ru.mihalych.randonneuring.model.Brevet;
 import ru.mihalych.randonneuring.service.BrevetService;
@@ -9,14 +9,10 @@ import java.util.List;
 
 @RestController
 @RequestMapping("/brevets")
+@RequiredArgsConstructor
 public class BrevetController {
 
     private final BrevetService brevetService;
-
-    @Autowired
-    public BrevetController(BrevetService brevetService) {
-        this.brevetService = brevetService;
-    }
 
     @GetMapping
     public List<Brevet> brevets() {
@@ -34,7 +30,7 @@ public class BrevetController {
     }
 
     @PutMapping
-    public Brevet caveBrevet(@RequestBody Brevet brevet) {
-        return brevetService.caveBrevet(brevet);
+    public Brevet saveBrevet(@RequestBody Brevet brevet) {
+        return brevetService.saveBrevet(brevet);
     }
 }
