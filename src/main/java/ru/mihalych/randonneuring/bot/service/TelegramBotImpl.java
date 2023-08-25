@@ -177,28 +177,30 @@ public class TelegramBotImpl extends TelegramLongPollingBot implements BotComman
         long chatId = update.getCallbackQuery().getMessage().getChatId();
         Telegram telegram = getTelegram((int) chatId, true);
         String txtCallback = update.getCallbackQuery().getData();
-        switch (txtCallback) {
-            case "save":
-                User user = userService.userById(telegram.getUser().getId());
-                user.setSaveClose(true);
-                userService.saveUser(user);
-                telegram.setStatusBot(StatusBotForUser.CHECK);
-                telegramService.saveTelegram(telegram);
-                Check check = Check.builder()
-                        .user(user)
-                        .checkTime(ParametersBrevet.getStart())
-                        .kp(0)
-                        .build();
-                checkService.saveCheck(check);
-                sendMessage(chatId, "Данные сохранены!");
-                break;
-            case "update":
-                telegram.setStatusBot(StatusBotForUser.EN_NAME_I);
-                telegramService.saveTelegram(telegram);
-                sendMessage(chatId, "Нужно ввести имя и фамилию заново");
-                break;
-            default:
-                sendMessage(chatId, "Не ожидаемое состояние! Для продолжения попробуйте ввести команду: /help");
+        if (telegram.getStatusBot() == StatusBotForUser.VALID) {
+            switch (txtCallback) {
+                case "save":
+                    User user = userService.userById(telegram.getUser().getId());
+                    user.setSaveClose(true);
+                    userService.saveUser(user);
+                    telegram.setStatusBot(StatusBotForUser.CHECK);
+                    telegramService.saveTelegram(telegram);
+                    Check check = Check.builder()
+                            .user(user)
+                            .checkTime(ParametersBrevet.getStart())
+                            .kp(0)
+                            .build();
+                    checkService.saveCheck(check);
+                    sendMessage(chatId, "Данные сохранены!");
+                    break;
+                case "update":
+                    telegram.setStatusBot(StatusBotForUser.EN_NAME_I);
+                    telegramService.saveTelegram(telegram);
+                    sendMessage(chatId, "Нужно ввести имя и фамилию заново");
+                    break;
+                default:
+                    sendMessage(chatId, "Не ожидаемое состояние! Для продолжения попробуйте ввести команду: /help");
+            }
         }
         sendForStatusBot(telegram);
         saveMessage(telegram, (update.getCallbackQuery().getMessage().getDate() * 1000L), null, txtCallback, null);
