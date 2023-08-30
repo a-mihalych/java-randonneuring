@@ -1,5 +1,6 @@
 package ru.mihalych.randonneuring.bot.service;
 
+import com.opencsv.CSVWriter;
 import jakarta.validation.constraints.NotNull;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
@@ -17,6 +18,7 @@ import ru.mihalych.randonneuring.bot.components.BotCommands;
 import ru.mihalych.randonneuring.bot.components.Buttons;
 import ru.mihalych.randonneuring.bot.config.BotConfig;
 import ru.mihalych.randonneuring.bot.config.ParametersBrevet;
+import ru.mihalych.randonneuring.check.dto.CheckResult;
 import ru.mihalych.randonneuring.check.model.Check;
 import ru.mihalych.randonneuring.check.service.CheckService;
 import ru.mihalych.randonneuring.message.model.Message;
@@ -27,8 +29,13 @@ import ru.mihalych.randonneuring.telegram.model.StatusBotForUser;
 import ru.mihalych.randonneuring.user.model.User;
 import ru.mihalych.randonneuring.user.service.UserService;
 
+import java.io.File;
+import java.io.FileWriter;
+import java.io.IOException;
 import java.time.Instant;
 import java.time.ZoneId;
+import java.util.ArrayList;
+import java.util.List;
 
 @Component
 @Slf4j
@@ -50,7 +57,7 @@ public class TelegramBotImpl extends TelegramLongPollingBot implements BotComman
         try {
             this.execute(new SetMyCommands(LIST_OF_COMMANDS, new BotCommandScopeDefault(), null));
         } catch (TelegramApiException e) {
-            log.error("class TelegramBotImpl, конструктор: {}", e.getMessage());
+            log.error("\n! Косяк в 'class TelegramBotImpl', конструктор:\n!!! {}", e.getMessage());
         }
     }
 
@@ -89,7 +96,7 @@ public class TelegramBotImpl extends TelegramLongPollingBot implements BotComman
         }
     }
 
-    private Telegram getTelegram(int chatId, boolean start) {
+    private Telegram getTelegram(long chatId, boolean start) {
         Telegram telegram = telegramService.telegramByTelegramUserChatId(chatId);
         if ((telegram == null) && start) {
             sendMessage(chatId, String.format("%s", StatusBotForUser.START.getDescription()));
@@ -112,7 +119,7 @@ public class TelegramBotImpl extends TelegramLongPollingBot implements BotComman
     private void updateCommand(Update update) {
         long chatId = update.getMessage().getChatId();
         String command = update.getMessage().getText();
-        Telegram telegram = getTelegram((int) chatId, !"/start".equals(command));
+        Telegram telegram = getTelegram(chatId, !"/start".equals(command));
         if (telegram == null) {
             if ("/start".equals(command)) {
                 telegram = telegramService.saveTelegram(Telegram.builder()
@@ -132,21 +139,35 @@ public class TelegramBotImpl extends TelegramLongPollingBot implements BotComman
                     break;
                 case "/help":
                     sendMessage(chatId, String.format("Запущена команда: %s", command));
+                    sendMessage(chatId, String.format("%s", HELP_TEXT));
+                    break;
+                case "/next":
+                    // todo сделать для повторной отметки на КП (неудачное фото)
+                    break;
+                case "/prev":
+                    // todo сделать для пропуска отметки на КП
                     break;
                 case "/dnf":
                     // todo сделать для отметки схода
                     break;
+                case "/results":
+                    List<CheckResult> result =  checkService.resultsBrevet();
+                    createFileCSV(result);
+                    sendMessage(chatId, "Создан файл с результатами");
+                    break;
                 default:
                     sendMessage(chatId, String.format("Не найдена команда: %s", command));
             }
-            sendForStatusBot(telegram);
+            if (!"/results".equals(command)) {
+                sendForStatusBot(telegram);
+            }
         }
         saveMessage(telegram, (update.getMessage().getDate() * 1000L), command, null, null);
     }
 
     private void updateText(Update update) {
         long chatId = update.getMessage().getChatId();
-        Telegram telegram = getTelegram((int) chatId, true);
+        Telegram telegram = getTelegram(chatId, true);
         String txt = update.getMessage().getText();
         if (telegram != null) {
             StatusBotForUser status = telegram.getStatusBot();
@@ -175,7 +196,7 @@ public class TelegramBotImpl extends TelegramLongPollingBot implements BotComman
 
     private void updateCallback(Update update) {
         long chatId = update.getCallbackQuery().getMessage().getChatId();
-        Telegram telegram = getTelegram((int) chatId, true);
+        Telegram telegram = getTelegram(chatId, true);
         String txtCallback = update.getCallbackQuery().getData();
         if (telegram.getStatusBot() == StatusBotForUser.VALID) {
             switch (txtCallback) {
@@ -208,7 +229,7 @@ public class TelegramBotImpl extends TelegramLongPollingBot implements BotComman
 
     private void updatePhoto(Update update) {
         long chatId = update.getMessage().getChatId();
-        Telegram telegram = getTelegram((int) chatId, true);
+        Telegram telegram = getTelegram(chatId, true);
         String file_id = update.getMessage().getPhoto().get(0).getFileId();
         Message message = saveMessage(telegram, (update.getMessage().getDate() * 1000L), null, null, file_id);
         if ((telegram.getStatusBot() == StatusBotForUser.CHECK) || (telegram.getStatusBot() == StatusBotForUser.FINISH)) {
@@ -227,7 +248,7 @@ public class TelegramBotImpl extends TelegramLongPollingBot implements BotComman
             if (ParametersBrevet.getCountKP() < kp) {
                 telegram.setStatusBot(StatusBotForUser.CLOSE);
                 telegramService.saveTelegram(telegram);
-                txtKP = "Финиш";
+                txtKP = "Финиш, результат: " + checkService.userResult(user.getId());
             }
             sendPhoto(chatId, file_id, user, txtKP);
             sendPhoto(Long.parseLong(getGeneralChat()), file_id, user, txtKP);
@@ -244,8 +265,13 @@ public class TelegramBotImpl extends TelegramLongPollingBot implements BotComman
             case EN_NAME_I:
             case EN_NAME_F:
             case FINISH:
+                sendMessage(chatId, statusBot.getDescription());
+                break;
             case CLOSE:
                 sendMessage(chatId, statusBot.getDescription());
+                String result = checkService.userResult(telegram.getUser().getId());
+                String txt = String.format("Ваш результат: %s", result);
+                sendMessage(chatId, txt);
                 break;
             case VALID:
                 sendMessage(chatId, statusBot.getDescription());
@@ -268,7 +294,7 @@ public class TelegramBotImpl extends TelegramLongPollingBot implements BotComman
         try {
             execute(message);
         } catch (TelegramApiException e) {
-            log.info("Косяк в 'class TelegramBotImpl', метод 'sendMessage': \n!!! {}", e.getMessage());
+            log.error("\n! Косяк в 'class TelegramBotImpl', метод 'sendMessage':\n!!! {}", e.getMessage());
         }
     }
 
@@ -281,7 +307,7 @@ public class TelegramBotImpl extends TelegramLongPollingBot implements BotComman
         try {
             execute(message);
         } catch (TelegramApiException e) {
-            log.info("Косяк в 'class TelegramBotImpl', метод 'sendCallback': \n!!! {}", e.getMessage());
+            log.error("\n! Косяк в 'class TelegramBotImpl', метод 'sendCallback':\n!!! {}", e.getMessage());
         }
     }
 
@@ -293,7 +319,7 @@ public class TelegramBotImpl extends TelegramLongPollingBot implements BotComman
         try {
             execute(sendPhoto);
         } catch (TelegramApiException e) {
-            log.info("Косяк в 'class TelegramBotImpl', метод 'sendPhoto': \n!!! {}", e.getMessage());
+            log.error("\n! Косяк в 'class TelegramBotImpl', метод 'sendPhoto':\n!!! {}", e.getMessage());
         }
     }
 
@@ -328,5 +354,29 @@ public class TelegramBotImpl extends TelegramLongPollingBot implements BotComman
         int userId = telegram.getUser().getId();
         int kp = checkService.maxKP(userId) + 1;
         return (telegram.getStatusBot().getDescription() + kp);
+    }
+
+    private void createFileCSV(List<CheckResult> result) {
+        File file = new File(ParametersBrevet.CSV_FILE_PATH);
+        try (FileWriter outputfile = new FileWriter(file);
+            CSVWriter writer = new CSVWriter(outputfile, ';',
+                    CSVWriter.NO_QUOTE_CHARACTER,
+                    CSVWriter.DEFAULT_ESCAPE_CHARACTER,
+                    CSVWriter.DEFAULT_LINE_END)
+        ) {
+            List<String[]> data = new ArrayList<>();
+            for (CheckResult checkResult : result) {
+                String[] rowdata = new String[]{checkResult.getNameLast(),
+                                                checkResult.getNameFirst(),
+                                                ParametersBrevet.IZHEVSK,
+                                                ParametersBrevet.KOD_CLUB,
+                                                checkResult.getResult()};
+                data.add(rowdata);
+            }
+            writer.writeAll(data);
+        }
+        catch (IOException e) {
+            log.error("\n! Косяк в 'class TelegramBotImpl', метод 'createFileCSV':\n!!! {}", e.getMessage());
+        }
     }
 }

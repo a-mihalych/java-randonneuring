@@ -20,7 +20,7 @@ public class TelegramServiceImpl implements TelegramService {
     }
 
     @Override
-    public Telegram telegramByTelegramUserChatId(Integer telegramUserChatId) {
+    public Telegram telegramByTelegramUserChatId(Long telegramUserChatId) {
         return telegramRepository.findByTelegramUserChatId(telegramUserChatId);
     }
 }

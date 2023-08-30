@@ -5,5 +5,5 @@ import ru.mihalych.randonneuring.telegram.model.Telegram;
 
 public interface TelegramRepository extends JpaRepository<Telegram, Integer> {
 
-    Telegram findByTelegramUserChatId(Integer telegramUserChatId);
+    Telegram findByTelegramUserChatId(Long telegramUserChatId);
 }
