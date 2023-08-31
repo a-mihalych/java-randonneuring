@@ -9,6 +9,7 @@ public class ParametersBrevet {
     public static final String CSV_FILE_PATH = "./result.csv";
     public static final String IZHEVSK = "IJEVSK";
     public static final String KOD_CLUB = "511062";
+    public static final String[] TABLE_HEADERS = {"NOM", "PRENOM", "CLUB DU PARTICIPANT", "CODE ACP", "TEMPS"};
 
     public static int getCountKP() {
         return countKP;
