@@ -365,12 +365,13 @@ public class TelegramBotImpl extends TelegramLongPollingBot implements BotComman
                     CSVWriter.DEFAULT_LINE_END)
         ) {
             List<String[]> data = new ArrayList<>();
+            data.add(ParametersBrevet.TABLE_HEADERS);
             for (CheckResult checkResult : result) {
-                String[] rowdata = new String[]{checkResult.getNameLast(),
-                                                checkResult.getNameFirst(),
-                                                ParametersBrevet.IZHEVSK,
-                                                ParametersBrevet.KOD_CLUB,
-                                                checkResult.getResult()};
+                String[] rowdata = {checkResult.getNameLast(),
+                                    checkResult.getNameFirst(),
+                                    ParametersBrevet.IZHEVSK,
+                                    ParametersBrevet.KOD_CLUB,
+                                    checkResult.getResult()};
                 data.add(rowdata);
             }
             writer.writeAll(data);
