@@ -23,4 +23,9 @@ public class TelegramServiceImpl implements TelegramService {
     public Telegram telegramByTelegramUserChatId(Long telegramUserChatId) {
         return telegramRepository.findByTelegramUserChatId(telegramUserChatId);
     }
+
+    @Override
+    public Telegram telegramByUserId(Integer userId) {
+        return telegramRepository.findByUserId(userId);
+    }
 }

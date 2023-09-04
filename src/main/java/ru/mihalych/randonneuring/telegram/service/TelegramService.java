@@ -7,4 +7,6 @@ public interface TelegramService {
      Telegram saveTelegram(Telegram telegram);
 
      Telegram telegramByTelegramUserChatId(Long telegramUserId);
+
+     Telegram telegramByUserId(Integer userId);
 }

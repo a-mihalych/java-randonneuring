@@ -71,8 +71,12 @@ public class TelegramBotImpl extends TelegramLongPollingBot implements BotComman
         return botConfig.getToken();
     }
 
-    private String getGeneralChat() {
-        return botConfig.getChatId();
+    private long getGeneralChat() {
+        return Long.parseLong(botConfig.getChatId());
+    }
+
+    private long getChatAdmin() {
+        return Long.parseLong(botConfig.getChatIdAdmin());
     }
 
     @Override
@@ -125,14 +129,16 @@ public class TelegramBotImpl extends TelegramLongPollingBot implements BotComman
                 telegram = telegramService.saveTelegram(Telegram.builder()
                                 .name(update.getMessage().getFrom().getFirstName())
                                 .telegramUserChatId(chatId)
-                                .telegramAdmin(false)
+                                .telegramAdmin(chatId == getChatAdmin())
                                 .user(null)
                                 .statusBot(StatusBotForUser.EN_NAME_I)
                                 .build());
                 sendMessage(chatId, String.format("Запущена команда: %s\nБот готов к работе!", command));
                 sendForStatusBot(telegram);
             }
+            saveMessage(telegram, (update.getMessage().getDate() * 1000L), command, null, null);
         } else {
+            Message message = saveMessage(telegram, (update.getMessage().getDate() * 1000L), command, null, null);
             switch (command) {
                 case "/start":
                     sendMessage(chatId, String.format("Не запущена команда: %s", command));
@@ -142,27 +148,47 @@ public class TelegramBotImpl extends TelegramLongPollingBot implements BotComman
                     sendMessage(chatId, String.format("%s", HELP_TEXT));
                     break;
                 case "/next":
-                    // todo сделать для повторной отметки на КП (неудачное фото)
-                    break;
-                case "/prev":
                     // todo сделать для пропуска отметки на КП
                     break;
+                case "/prev":
+                    // todo сделать для повторной отметки на КП (неудачное фото)
+                    break;
                 case "/dnf":
-                    // todo сделать для отметки схода
+                    if (telegram.getStatusBot() != StatusBotForUser.CLOSE) {
+                        sendMessage(chatId, String.format("Запущена команда: %s", command));
+                        telegram.setStatusBot(StatusBotForUser.CLOSE);
+                        telegramService.saveTelegram(telegram);
+                        User user = userService.userById(telegram.getUser().getId());
+                        checkService.saveCheck(Check.builder()
+                                .user(user)
+                                .checkTime(message.getMessageTime())
+                                .kp(-ParametersBrevet.getCountKP() - 1)
+                                .build());
+                        String dnf = checkService.userResult(user.getId());
+                        sendMessage(chatId, "Сход зарегистрирован");
+                        sendMessage(getGeneralChat(), String.format("Сход: %s %s, результат: %s",
+                                                                    user.getEnNameI(), user.getEnNameF(), dnf));
+                    } else {
+                        sendMessage(chatId, String.format("Не запущена команда: %s, нельзя сойти с завершённого бревета",
+                                                          command));
+                    }
                     break;
                 case "/results":
-                    List<CheckResult> result =  checkService.resultsBrevet();
-                    createFileCSV(result);
-                    sendMessage(chatId, "Создан файл с результатами");
+                    if (telegram.getTelegramAdmin()) {
+                        List<CheckResult> result = checkService.resultsBrevet();
+                        createFileCSV(result);
+                        sendMessage(chatId, "Создан файл с результатами");
+                    } else {
+                        sendMessage(chatId, "Не выполнена команда: /results\nЭта команда доступна только админу");
+                    }
                     break;
                 default:
                     sendMessage(chatId, String.format("Не найдена команда: %s", command));
             }
-            if (!"/results".equals(command)) {
+            if (!("/results".equals(command) && (telegram.getTelegramAdmin()))) {
                 sendForStatusBot(telegram);
             }
         }
-        saveMessage(telegram, (update.getMessage().getDate() * 1000L), command, null, null);
     }
 
     private void updateText(Update update) {
@@ -251,7 +277,7 @@ public class TelegramBotImpl extends TelegramLongPollingBot implements BotComman
                 txtKP = "Финиш, результат: " + checkService.userResult(user.getId());
             }
             sendPhoto(chatId, file_id, user, txtKP);
-            sendPhoto(Long.parseLong(getGeneralChat()), file_id, user, txtKP);
+            sendPhoto(getGeneralChat(), file_id, user, txtKP);
         } else {
             sendMessage(chatId, telegram.getStatusBot().getDescription());
         }

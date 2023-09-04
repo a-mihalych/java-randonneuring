@@ -6,7 +6,6 @@ import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.PropertySource;
 
 @Configuration
-@Setter
 @Getter
 @ToString
 @EqualsAndHashCode(of = "token")
@@ -15,9 +14,11 @@ import org.springframework.context.annotation.PropertySource;
 public class BotConfig {
 
     @Value("${bot.name}")
-    String botName;
+    private String botName;
     @Value("${bot.token}")
-    String token;
+    private String token;
     @Value("${bot.chatId}")
-    String chatId;
+    private String chatId;
+    @Value("${bot.chatIdAdmin}")
+    private String chatIdAdmin;
 }

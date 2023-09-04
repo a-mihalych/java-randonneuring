@@ -34,4 +34,3 @@ build/
 .vscode/
 /src/main/resources/schema.sql
 /src/main/resources/config.properties
-/src/main/resources/application.properties

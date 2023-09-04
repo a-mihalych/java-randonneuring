@@ -5,7 +5,7 @@ import java.time.LocalDateTime;
 public class ParametersBrevet {
 
     private static int countKP = 3;
-    private static LocalDateTime start = LocalDateTime.of(2023, 9, 9, 5, 0);
+    private static LocalDateTime start = LocalDateTime.of(2023, 9, 9, 6, 0);
     public static final String CSV_FILE_PATH = "./result.csv";
     public static final String IZHEVSK = "IJEVSK";
     public static final String KOD_CLUB = "511062";

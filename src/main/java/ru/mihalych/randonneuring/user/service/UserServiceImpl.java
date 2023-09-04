@@ -6,7 +6,9 @@ import org.springframework.transaction.annotation.Transactional;
 import ru.mihalych.randonneuring.user.model.User;
 import ru.mihalych.randonneuring.user.repository.UserRepository;
 
+import java.util.List;
 import java.util.Optional;
+import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -29,5 +31,12 @@ public class UserServiceImpl implements UserService {
             user = userOptional.get();
         }
         return user;
+    }
+
+    @Override
+    public List<Integer> idUsers() {
+        return userRepository.findAll().stream()
+                .map(User::getId)
+                .collect(Collectors.toList());
     }
 }

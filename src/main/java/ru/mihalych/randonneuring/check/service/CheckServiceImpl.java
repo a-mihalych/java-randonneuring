@@ -9,12 +9,15 @@ import ru.mihalych.randonneuring.check.dto.CheckResult;
 import ru.mihalych.randonneuring.check.mapper.CheckMapper;
 import ru.mihalych.randonneuring.check.model.Check;
 import ru.mihalych.randonneuring.check.repository.CheckRepository;
+import ru.mihalych.randonneuring.telegram.model.StatusBotForUser;
+import ru.mihalych.randonneuring.telegram.model.Telegram;
+import ru.mihalych.randonneuring.telegram.service.TelegramService;
 import ru.mihalych.randonneuring.user.service.UserService;
 
 import java.time.Duration;
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
-import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -24,6 +27,7 @@ public class CheckServiceImpl implements CheckService {
 
     private final CheckRepository checkRepository;
     private final UserService userService;
+    private final TelegramService telegramService;
 
     @Override
     @Transactional
@@ -47,21 +51,37 @@ public class CheckServiceImpl implements CheckService {
     }
 
     @Override
+    @Transactional
     public List<CheckResult> resultsBrevet() {
-        List<Check> resultBrevet = checkRepository.resultBrevet(ParametersBrevet.getCountKP() + 1);
-        return resultBrevet.stream()
-                           .map(check -> {
-                                Integer userId = check.getUser().getId();
-                                return CheckMapper.toCheckResult(userService.userById(userId), userResult(userId));
-                           })
-                           .collect(Collectors.toList());
+        return userService.idUsers().stream()
+                                    .map(userId -> CheckMapper.toCheckResult(userService.userById(userId),
+                                                                             userResult(userId)))
+                                    .sorted()
+                                    .toList();
     }
 
     @Override
+    @Transactional
     public String userResult(Integer userId) {
-        Check check = checkRepository.findByUserIdAndKp(userId, (ParametersBrevet.getCountKP() + 1));
-        Duration duration = Duration.between(ParametersBrevet.getStart(), check.getCheckTime());
-        int minutesResult = duration.toMinutesPart();
-        return String.format("%d:%s", duration.toHoursPart(), ((minutesResult > 9 ? "" : "0") + minutesResult));
+        String result = "DNF";
+        int kpFinish = ParametersBrevet.getCountKP() + 1;
+        Check check = checkRepository.userResult(userId, kpFinish);
+        if (check != null) {
+            if (check.getKp() > 0) {
+                Duration duration = Duration.between(ParametersBrevet.getStart(), check.getCheckTime());
+                int minutesResult = duration.toMinutesPart();
+                result = String.format("%d:%s", duration.toHoursPart(), ((minutesResult > 9 ? "" : "0") + minutesResult));
+            }
+        } else {
+            saveCheck(Check.builder()
+                           .user(userService.userById(userId))
+                           .checkTime(LocalDateTime.now())
+                           .kp(-kpFinish)
+                           .build());
+            Telegram telegram = telegramService.telegramByUserId(userId);
+            telegram.setStatusBot(StatusBotForUser.CLOSE);
+            telegramService.saveTelegram(telegram);
+        }
+        return result;
     }
 }
