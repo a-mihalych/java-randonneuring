@@ -147,6 +147,10 @@ public class TelegramBotImpl extends TelegramLongPollingBot implements BotComman
                     sendMessage(chatId, String.format("Запущена команда: %s", command));
                     sendMessage(chatId, String.format("%s", HELP_TEXT));
                     break;
+                case "/legend":
+                    sendMessage(chatId, String.format("Запущена команда: %s", command));
+                    sendMessage(chatId, String.format("%s", ParametersBrevet.getLegend()));
+                    break;
                 case "/next":
                     // todo сделать для пропуска отметки на КП
                     break;
@@ -173,6 +177,13 @@ public class TelegramBotImpl extends TelegramLongPollingBot implements BotComman
                                                           command));
                     }
                     break;
+                case "/time":
+                    if (telegram.getTelegramAdmin()) {
+                        sendCallback(chatId, "Насколько скорректировать старт?", Buttons.getChangeTimeButton());
+                    } else {
+                        sendMessage(chatId, "Не выполнена команда: /time\nЭта команда доступна только админу");
+                    }
+                    break;
                 case "/results":
                     if (telegram.getTelegramAdmin()) {
                         List<CheckResult> result = checkService.resultsBrevet();
@@ -185,7 +196,7 @@ public class TelegramBotImpl extends TelegramLongPollingBot implements BotComman
                 default:
                     sendMessage(chatId, String.format("Не найдена команда: %s", command));
             }
-            if (!("/results".equals(command) && (telegram.getTelegramAdmin()))) {
+            if (!((("/results".equals(command)) || ("/time".equals(command))) && (telegram.getTelegramAdmin()))) {
                 sendForStatusBot(telegram);
             }
         }
@@ -249,6 +260,51 @@ public class TelegramBotImpl extends TelegramLongPollingBot implements BotComman
                     sendMessage(chatId, "Не ожидаемое состояние! Для продолжения попробуйте ввести команду: /help");
             }
         }
+        if (telegram.getTelegramAdmin()) {
+            int correct = 0;
+            switch (txtCallback) {
+                case "p1":
+                    correct = 1;
+                    break;
+                case "p2":
+                    correct = 2;
+                    break;
+                case "p3":
+                    correct = 3;
+                    break;
+                case "p4":
+                    correct = 4;
+                    break;
+                case "p5":
+                    correct = 5;
+                    break;
+                case "p10":
+                    correct = 10;
+                    break;
+                case "p30":
+                    correct = 30;
+                    break;
+                case "p60":
+                    correct = 60;
+                    break;
+                case "m1":
+                    correct = -1;
+                    break;
+                case "m2":
+                    correct = -2;
+                    break;
+                case "m5":
+                    correct = -5;
+                    break;
+                case "m10":
+                    correct = -10;
+                    break;
+            }
+            if (correct != 0) {
+                ParametersBrevet.correct(correct);
+                sendMessage(chatId, String.format("Новое время старта: %s", ParametersBrevet.getStart()));
+            }
+        }
         sendForStatusBot(telegram);
         saveMessage(telegram, (update.getCallbackQuery().getMessage().getDate() * 1000L), null, txtCallback, null);
     }
@@ -266,7 +322,7 @@ public class TelegramBotImpl extends TelegramLongPollingBot implements BotComman
                     .checkTime(message.getMessageTime())
                     .kp(kp)
                     .build());
-            String txtKP = "КП " + kp;
+            String txtKP = "КП " + kp + ", " + ParametersBrevet.getTxtNameKP(kp);
             if (ParametersBrevet.getCountKP() == kp) {
                 telegram.setStatusBot(StatusBotForUser.FINISH);
                 telegramService.saveTelegram(telegram);
@@ -274,7 +330,8 @@ public class TelegramBotImpl extends TelegramLongPollingBot implements BotComman
             if (ParametersBrevet.getCountKP() < kp) {
                 telegram.setStatusBot(StatusBotForUser.CLOSE);
                 telegramService.saveTelegram(telegram);
-                txtKP = "Финиш, результат: " + checkService.userResult(user.getId());
+                txtKP = "Финиш, " + ParametersBrevet.getTxtNameKP(kp) +
+                        ", результат: " + checkService.userResult(user.getId());
             }
             sendPhoto(chatId, file_id, user, txtKP);
             sendPhoto(getGeneralChat(), file_id, user, txtKP);
@@ -290,7 +347,6 @@ public class TelegramBotImpl extends TelegramLongPollingBot implements BotComman
         switch (statusBot) {
             case EN_NAME_I:
             case EN_NAME_F:
-            case FINISH:
                 sendMessage(chatId, statusBot.getDescription());
                 break;
             case CLOSE:
@@ -308,6 +364,10 @@ public class TelegramBotImpl extends TelegramLongPollingBot implements BotComman
                 break;
             case CHECK:
                 sendMessage(chatId, getCheckText(telegram));
+                break;
+            case FINISH:
+                sendMessage(chatId, (statusBot.getDescription() + ", " +
+                                     ParametersBrevet.getTxtNameKP(ParametersBrevet.getCountKP() + 1)));
                 break;
         }
     }
@@ -379,7 +439,7 @@ public class TelegramBotImpl extends TelegramLongPollingBot implements BotComman
     private String getCheckText(Telegram telegram) {
         int userId = telegram.getUser().getId();
         int kp = checkService.maxKP(userId) + 1;
-        return (telegram.getStatusBot().getDescription() + kp);
+        return (telegram.getStatusBot().getDescription() + kp + ", " + ParametersBrevet.getTxtNameKP(kp));
     }
 
     private void createFileCSV(List<CheckResult> result) {
