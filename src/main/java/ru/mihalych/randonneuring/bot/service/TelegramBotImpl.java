@@ -158,7 +158,8 @@ public class TelegramBotImpl extends TelegramLongPollingBot implements BotComman
                     // todo сделать для повторной отметки на КП (неудачное фото)
                     break;
                 case "/dnf":
-                    if (telegram.getStatusBot() != StatusBotForUser.CLOSE) {
+                    if ((telegram.getStatusBot() == StatusBotForUser.CHECK) ||
+                        (telegram.getStatusBot() == StatusBotForUser.FINISH)) {
                         sendMessage(chatId, String.format("Запущена команда: %s", command));
                         telegram.setStatusBot(StatusBotForUser.CLOSE);
                         telegramService.saveTelegram(telegram);
@@ -173,8 +174,13 @@ public class TelegramBotImpl extends TelegramLongPollingBot implements BotComman
                         sendMessage(getGeneralChat(), String.format("Сход: %s %s, результат: %s",
                                                                     user.getEnNameI(), user.getEnNameF(), dnf));
                     } else {
-                        sendMessage(chatId, String.format("Не запущена команда: %s, нельзя сойти с завершённого бревета",
-                                                          command));
+                        if (telegram.getStatusBot() == StatusBotForUser.CLOSE) {
+                            sendMessage(chatId,
+                                String.format("Не запущена команда: %s, нельзя сойти с завершённого бревета", command));
+                        } else {
+                            sendMessage(chatId,
+                                String.format("Не запущена команда: %s, нужно завершить регистрацию", command));
+                        }
                     }
                     break;
                 case "/time":

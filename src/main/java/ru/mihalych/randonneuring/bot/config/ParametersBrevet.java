@@ -20,8 +20,7 @@ public class ParametersBrevet {
             "Запасайтесь всем необходимым, и обедайте, кому нужно, в Шаркане\n" +
             "КП-3 ЯкшурБодья. Отметка у памятника Почтовой карете. 162(53) км, закрытие 16:48\n" +
             "ФИНИШ: Парк Кирова, 200(38) км, закрытие 19:30.";
-//    private static LocalDateTime start = LocalDateTime.of(2023, 9, 9, 6, 0);
-    private static LocalDateTime start = LocalDateTime.of(2023, 9, 5, 6, 0);
+    private static LocalDateTime start = LocalDateTime.of(2023, 9, 9, 6, 0);
     public static final String CSV_FILE_PATH = "./result.csv";
     public static final String IZHEVSK = "IJEVSK";
     public static final String KOD_CLUB = "511062";
